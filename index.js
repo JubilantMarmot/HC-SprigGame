@@ -122,22 +122,6 @@ CCC...4..4......
 ................`, key: "j"}
 }
 
-let currentLevel = 0
-const nextLevel = () => {
-  if (levels[currentLevel + 1]) {
-    currentLevel += 1
-    setLevel(currentLevel)
-  } else {
-    setMap(map`
-wwwww
-w...w
-wwwww
-wwwww
-wwwww`)
-    addText("You Win!", { x: 6, y: 4, color: color`3` });
-  }
-}
-
 const levels = [
   map`
 wwwww
@@ -149,8 +133,58 @@ wb..w
 w...w
 w.p.w
 w...w
-wwwww`
+wwwww`,
+  map`
+wwwwww
+w.b.gw
+w.wwww
+w....w
+wwww.w
+w....w
+w.wwww
+wp...w
+wwwwww`,
+  map`
+wwwww
+wwwww
+wwwww
+wwgww
+ww.ww
+ww.ww
+ww.ww
+ww.ww
+ww.ww
+wwbww
+ww.ww
+ww.ww
+ww.ww
+w...w
+w...w
+w...w
+w.p.w
+wwwww
+wwwww
+wwwww`,
 ]
+
+let currentLevel = -1
+const nextLevel = () => {
+  if (levels[currentLevel + 1]) {
+    currentLevel += 1
+    setMap(levels[currentLevel])
+  } else {
+    currentLevel = -1
+    setMap(map`
+wwwww
+w...w
+wwwww
+wwwww
+wwwww`)
+    addText("You Win!", { x: 6, y: 4, color: color`3` });
+
+    setTimeout(() => gameWelcome(), 5000)
+  }
+}
 
 const setGameLegend = selectedPlayer => {
   sprites.player.sprite = selectedPlayer.sprite
@@ -161,18 +195,18 @@ const setGameLegend = selectedPlayer => {
     [sprites.player.key]: [sprites.player.key, sprites.block.key]
   })
 
-  setMap(levels[0])
+  nextLevel()
 }
 
 const chooseCharacter = () => {
   setLegend(...legendExcludingPlayer)
   
   setMap(map`
-xxxxxxxxxx
-x........x
-x........x
-x........x
-xxxxxxxxxx`)
+wwwwwwwwww
+w........w
+w........w
+w........w
+wwwwwwwwww`)
   addText("Choose character", {
     x: 2,
     y: 6,
@@ -208,9 +242,64 @@ xxxxxxxxxx`)
   })
 }
 
-const getPlayerSprite = () => getFirst(sprites.player.key)
+// We have to redraw text every time because only
+// clearText() method exists
+const welcomeText = () => {
+  clearText()
+  addText("Welcome to\nBlockPusher", {
+    x: 4,
+    y: 3,
+    color: color`0`,
+  })
+  addText("(L to reset\n   level)", {
+    x: 4,
+    y: 6,
+    color: color`0`
+  })
+}
 
-chooseCharacter()
+const gameWelcome = () => {
+  setLegend(...legendExcludingPlayer)
+  setMap(map`
+wwwwwwwwwwwwwww
+wwwwwwwwwwwwwww
+w.............w
+w.............w
+w.............w
+w.............w
+w.............w
+w.............w
+wwwwwwwwwwwwwww
+wwwwwwwwwwwwwww
+wwwwwwwwwwwwwww
+wwwwww...wwwwww
+wwwwww...wwwwww
+wwwwwwwwwwwwwww`)
+
+  welcomeText()
+
+  let timeout = 5
+  let i = timeout + 1
+
+  let interval
+  interval = setInterval(() => {
+    i--
+    welcomeText()
+    addText(`${i}`, {
+      x: 9,
+      y: 13,
+      color: color`0`
+    })
+
+    if (i === 0) {
+      clearInterval(interval)
+      clearText()
+      chooseCharacter()
+    }
+  }, 1000)
+}
+
+const getPlayerSprite = () => getFirst(sprites.player.key)
 
 onInput("w", () => {
   const playerSprite = getPlayerSprite()
@@ -237,6 +326,13 @@ onInput("d", () => {
   }
 });
 
+onInput("l", () => {
+  if (currentLevel !== -1) {
+    currentLevel -= 1
+    nextLevel()
+  }
+});
+
 afterInput(() => {
   const block = getFirst(sprites.block.key)
   const goal = getFirst(sprites.goal.key)
@@ -245,3 +341,5 @@ afterInput(() => {
     nextLevel()
   }
 });
+
+gameWelcome()
